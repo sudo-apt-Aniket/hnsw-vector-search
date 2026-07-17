@@ -1,0 +1,13 @@
+# Optional: enables local embeddings (sentence-transformers) as a
+# fallback when Ollama isn't running, e.g. on a hosted deployment.
+#
+# Not needed if you're running Ollama locally, or if you only care about
+# the vector-search/HNSW demo (that part has no AI dependency at all).
+#
+# Installs torch (CPU build) — a few hundred MB. Install separately from
+# requirements.txt so the base app stays lightweight for anyone who
+# doesn't need this fallback:
+#
+#   pip install -r requirements-optional.txt --extra-index-url https://download.pytorch.org/whl/cpu
+
+sentence-transformers>=3.0.0

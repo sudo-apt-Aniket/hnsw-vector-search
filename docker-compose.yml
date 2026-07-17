@@ -1,0 +1,43 @@
+# Two ways to run this:
+#
+# 1) Cloud-fallback mode (default, lightweight — good for a public demo):
+#      docker compose up app
+#    Set GROQ_API_KEY in a .env file for the /doc/ask RAG endpoint to work.
+#
+# 2) Full local mode with Ollama (matches the original design, needs
+#    more RAM/disk for model weights):
+#      docker compose --profile local-llm up
+#    Then, once ollama is up:
+#      docker compose exec ollama ollama pull nomic-embed-text
+#      docker compose exec ollama ollama pull llama3.2
+
+services:
+  app:
+    build:
+      context: .
+      args:
+        INSTALL_ST: "true"
+    ports:
+      - "8080:8080"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - VECTORDB_DATA_DIR=/app/data
+      # If you're running with --profile local-llm, uncomment the next
+      # line (or set it in a .env file) so the app can reach the ollama
+      # container by its service name instead of 127.0.0.1:
+      # - OLLAMA_HOST=ollama
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["local-llm"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  ollama_models:
