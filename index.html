@@ -164,7 +164,7 @@ button {
   <span class="badge hl">HNSW</span>
   <span class="badge">KD-TREE</span>
   <span class="badge">BRUTE FORCE</span>
-  <span class="badge" id="ollamaBadge">OLLAMA…</span>
+  <span class="badge" id="ollamaBadge">AI…</span>
   <span id="statsLabel">loading…</span>
 </header>
 
@@ -272,14 +272,14 @@ button {
     <!-- TAB: DOCUMENTS -->
     <div class="tab-content" id="tab-docs">
       <div>
-        <div class="sec">Ollama Status</div>
+        <div class="sec">AI Backend Status</div>
         <div class="ollama-status" id="ollamaStatus">Checking…</div>
       </div>
       <div>
         <div class="sec">Insert Document</div>
         <div style="display:flex;flex-direction:column;gap:8px">
           <input type="text" id="docTitle" placeholder="Document title / topic…" />
-          <textarea id="docText" placeholder="Paste your notes, textbook excerpt, lecture content…&#10;&#10;Long text is automatically split into overlapping chunks and each chunk gets its own real embedding via Ollama's nomic-embed-text model."></textarea>
+          <textarea id="docText" placeholder="Paste your notes, textbook excerpt, lecture content…&#10;&#10;Long text is automatically split into overlapping chunks and each chunk gets its own real embedding (via Ollama if running locally, otherwise sentence-transformers)."></textarea>
           <button class="btn-g" id="insertDocBtn" onclick="insertDocument()">⚡ EMBED &amp; INSERT</button>
           <div id="insertStatus" style="font-size:11px;color:var(--muted)"></div>
         </div>
@@ -326,7 +326,7 @@ button {
 // ════════════════════════════════════════════════════════════
 //  CONSTANTS
 // ════════════════════════════════════════════════════════════
-const API  = 'http://localhost:8080';
+const API  = '';  // relative path — resolves to whatever origin served this page
 const DIMS = 16;
 const COL  = { cs:'#00d9ff', math:'#b388ff', food:'#ffb74d', sports:'#69f0ae', doc:'#a6e3a1', default:'#90a4ae' };
 const DIM_COL = ['#00d9ff','#00d9ff','#00d9ff','#00d9ff','#b388ff','#b388ff','#b388ff','#b388ff',
@@ -642,22 +642,25 @@ async function checkOllamaStatus() {
     const r=await fetch(API+'/status'), d=await r.json();
     const badge=document.getElementById('ollamaBadge');
     const box=document.getElementById('ollamaStatus');
-    if (d.ollamaAvailable) {
-      badge.className='badge ok'; badge.textContent='OLLAMA ✓';
+    const genReady = d.ollamaAvailable || d.groqConfigured;
+    const embedReady = d.ollamaAvailable || d.sentenceTransformersAvailable || d.embedBackend !== 'not yet used';
+    if (genReady) {
+      const genLabel = d.ollamaAvailable ? 'Ollama (local)' : 'Groq (cloud)';
+      badge.className='badge ok'; badge.textContent='AI ✓ ' + (d.ollamaAvailable ? 'OLLAMA' : 'GROQ');
       box.className='ollama-status ok';
-      box.innerHTML=`<span style="color:var(--green)">● Online</span><br>`+
-        `Embed: <span style="color:var(--accent)">${d.embedModel}</span><br>`+
-        `Generate: <span style="color:var(--accent)">${d.genModel}</span><br>`+
+      box.innerHTML=`<span style="color:var(--green)">● Generation online</span><br>`+
+        `Generate via: <span style="color:var(--accent)">${genLabel}</span><br>`+
+        `Model: <span style="color:var(--accent)">${d.genModel}</span><br>`+
+        `Embed backend: <span style="color:var(--accent)">${embedReady ? d.embedBackend : 'not available yet'}</span><br>`+
         `Dims: <span style="color:var(--muted)">${d.docDims||'(first insert sets this)'}</span><br>`+
         `Documents: <span style="color:var(--text)">${d.docCount}</span>`;
     } else {
-      badge.className='badge err'; badge.textContent='OLLAMA ✗';
+      badge.className='badge err'; badge.textContent='AI ✗';
       box.className='ollama-status err';
       box.innerHTML=`<span style="color:var(--red)">● Offline</span><br><br>`+
-        `To enable RAG features:<br>`+
-        `<span style="color:var(--muted)">1. Install from ollama.com<br>`+
-        `2. ollama pull nomic-embed-text<br>`+
-        `3. ollama pull llama3.2</span>`;
+        `To enable RAG features, either:<br>`+
+        `<span style="color:var(--muted)">• Set a GROQ_API_KEY environment variable, or<br>`+
+        `• Run Ollama locally (ollama.com)</span>`;
     }
   } catch(_) {}
 }
