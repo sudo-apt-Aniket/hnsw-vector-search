@@ -17,7 +17,8 @@ import threading as _t
 from pathlib import Path
 
 from flask import Flask, request, jsonify, send_file
-
+from dotenv import load_dotenv
+load_dotenv()
 from core import VectorDB, DocumentDB, get_dist_fn, chunk_text, cosine
 from ai_providers import AIProvider
 from demo_data import load_demo
